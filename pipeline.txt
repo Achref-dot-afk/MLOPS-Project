@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+    environment {
+        POETRY_HOME = '/root/.local'
+        PATH = "$POETRY_HOME/bin:$PATH"
+    }
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/Jithsaavvy/Deploying-an-end-to-end-keyword-spotting-model-into-cloud-server-by-integrating-CI-CD-pipeline.git'
+            }
+        }
+        stage('Install python'){
+            steps{
+                sh 'apt-get update'
+                sh 'apt-get install -y python3'
+            }
+        }
+         stage('Install Poetry') {
+            steps {
+                sh '''
+                    curl -sSL https://install.python-poetry.org | python3 -
+                    poetry --version
+                    poetry lock --no-update
+                '''
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh 'poetry install --no-interaction --no-root'
+                sh 'apt-get install -y libsndfile1'
+            }
+        }      
+        stage('Run Tests') {
+            steps {
+                sh 'poetry run pytest'
+            }
+        }
+        stage('Build and push new version'){
+             steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                       sh "docker build -t achref2h/pyapp:${env.BUILD_NUMBER} ."
+                       sh "docker push achref2h/pyapp:${env.BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+        stage('Deploy the image on docker runtime'){
+            steps{
+                sh "docker run -d -p achref2h/pyapp:v${env.BUILD_NUMBER}"
+            }
+        }
+    }
+}
