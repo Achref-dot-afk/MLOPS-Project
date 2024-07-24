@@ -5,7 +5,7 @@ description = ""
 authors = ["Jithin Sasikumar"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.9,<3.11"
 cffi = "1.15.1"
 dataclasses = "0.6"
 docker = "5.0.3"
